@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>E-Commerce API Documentation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      margin: 0;
+      padding: 0;
+      background: #f7f9fc;
+      color: #1f2937;
+    }
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 32px;
+    }
+    h1, h2, h3, h4 {
+      color: #111827;
+    }
+    pre {
+      background: #111827;
+      color: #f8fafc;
+      padding: 16px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+    code {
+      font-family: Consolas, Monaco, 'Andale Mono', 'Ubuntu Mono', monospace;
+    }
+    blockquote {
+      margin: 24px 0;
+      padding: 16px;
+      background: #e2e8f0;
+      border-left: 4px solid #3b82f6;
+    }
+    section {
+      margin-bottom: 32px;
+    }
+    ul {
+      margin: 0 0 16px 24px;
+    }
+    .divider {
+      height: 1px;
+      background: #d1d5db;
+      margin: 32px 0;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>E-Commerce API Documentation</h1>
+    <section>
+      <h2>Overview</h2>
+      <p>This Django REST API project provides:</p>
+      <ul>
+        <li>User registration with email OTP verification</li>
+        <li>Login with JWT tokens</li>
+        <li>Profile picture upload</li>
+        <li>Product catalog listing</li>
+        <li>Admin-only product create, update, delete</li>
+      </ul>
+      <p>Base API prefix: <code>/api/</code></p>
+      <p>Authentication and security:</p>
+      <ul>
+        <li>OTP verification is used for new user activation</li>
+        <li>JWT tokens are issued on successful login</li>
+        <li><code>access_token</code> and <code>refresh_token</code> cookies are set after login</li>
+        <li><code>session_token</code> cookie is used during OTP verification</li>
+      </ul>
+    </section>
+
+    <hr class="divider" />
+
+    <section>
+      <h2>Authentication Flow</h2>
+      <h3>1. Register a user</h3>
+      <p>Endpoint: <code>POST /api/accounts/register/</code></p>
+      <ul>
+        <li>Registers a new user</li>
+        <li>Sends OTP to user email</li>
+        <li>Returns <code>session_token</code> cookie valid for 15 minutes</li>
+      </ul>
+      <p>Payload:</p>
+      <pre><code>{
+  "first_name": "John",
+  "last_name": "Doe",
+  "username": "john_doe",
+  "email": "john@example.com",
+  "password": "StrongPassword123!",
+  "phone_number": "+1234567890",
+  "role": "customer"
+}
+</code></pre>
+      <p>Successful response:</p>
+      <pre><code>{
+  "message": "User registered successfully. Please check your email for the OTP to verify your account."
+}
+</code></pre>
+
+      <h3>2. Verify OTP</h3>
+      <p>Endpoint: <code>POST /api/accounts/verify-otp/</code></p>
+      <ul>
+        <li>Verifies the OTP sent to the user email</li>
+        <li>Activates the account and marks it as verified</li>
+        <li>Requires the <code>session_token</code> cookie from registration/login</li>
+      </ul>
+      <p>Payload:</p>
+      <pre><code>{
+  "otp": "123456"
+}
+</code></pre>
+      <p>Successful response:</p>
+      <pre><code>{
+  "message": "OTP verified successfully. Your account is now active."
+}
+</code></pre>
+
+      <h3>3. Login</h3>
+      <p>Endpoint: <code>POST /api/accounts/login/</code></p>
+      <ul>
+        <li>Authenticates a verified user</li>
+        <li>If account is not verified, it resends OTP and sets <code>session_token</code></li>
+        <li>On success, sets <code>access_token</code> and <code>refresh_token</code> cookies</li>
+      </ul>
+      <p>Payload:</p>
+      <pre><code>{
+  "email": "john@example.com",
+  "password": "StrongPassword123!"
+}
+</code></pre>
+      <p>Successful response:</p>
+      <pre><code>{
+  "message": "Login successful."
+}
+</code></pre>
+      <p>If user is not verified:</p>
+      <pre><code>{
+  "message": "User is not verified. A new OTP has been sent to your email."
+}
+</code></pre>
+
+      <h3>Token cookies</h3>
+      <ul>
+        <li><code>session_token</code> — used only during OTP verification</li>
+        <li><code>access_token</code> — JWT access token, expires in 60 minutes</li>
+        <li><code>refresh_token</code> — JWT refresh token, expires in 1 day</li>
+      </ul>
+      <blockquote>
+        <p>Note: The backend uses <code>rest_framework_simplejwt</code> for authentication.</p>
+      </blockquote>
+    </section>
+
+    <hr class="divider" />
+
+    <section>
+      <h2>Accounts API</h2>
+      <h3>Register</h3>
+      <ul>
+        <li>URL: <code>POST /api/accounts/register/</code></li>
+        <li>Public</li>
+        <li>Returns <code>201 Created</code></li>
+      </ul>
+      <p>Fields:</p>
+      <ul>
+        <li><code>first_name</code> (string, required)</li>
+        <li><code>last_name</code> (string, required)</li>
+        <li><code>username</code> (string, required)</li>
+        <li><code>email</code> (string, required)</li>
+        <li><code>password</code> (string, required)</li>
+        <li><code>phone_number</code> (string, optional)</li>
+        <li><code>role</code> (string, optional, default <code>customer</code>)</li>
+      </ul>
+
+      <h3>Verify OTP</h3>
+      <ul>
+        <li>URL: <code>POST /api/accounts/verify-otp/</code></li>
+        <li>Public (requires <code>session_token</code> cookie)</li>
+      </ul>
+      <p>Fields:</p>
+      <ul>
+        <li><code>otp</code> (string or integer, required)</li>
+      </ul>
+
+      <h3>Login</h3>
+      <ul>
+        <li>URL: <code>POST /api/accounts/login/</code></li>
+        <li>Public</li>
+      </ul>
+      <p>Fields:</p>
+      <ul>
+        <li><code>email</code> (string, required)</li>
+        <li><code>password</code> (string, required)</li>
+      </ul>
+
+      <h3>Profile Picture</h3>
+      <ul>
+        <li>URL: <code>GET /api/accounts/profile-picture/</code></li>
+        <li>URL: <code>POST /api/accounts/profile-picture/</code></li>
+        <li>Requires authentication</li>
+        <li>Uses <code>permissions.IsAuthenticated</code></li>
+      </ul>
+      <p>Upload payload example (multipart form):</p>
+      <ul>
+        <li><code>image</code>: file</li>
+      </ul>
+      <p>Success response:</p>
+      <pre><code>{
+  "message": "Profile picture uploaded successfully."
+}
+</code></pre>
+      <p>Get profile picture response example:</p>
+      <pre><code>{
+  "id": "<uuid>",
+  "user": "<user_uuid>",
+  "image": "https://.../profile_pictures/myphoto.jpg",
+  "created_at": "2026-05-20T12:34:56Z",
+  "updated_at": "2026-05-20T12:34:56Z"
+}
+</code></pre>
+    </section>
+
+    <hr class="divider" />
+
+    <section>
+      <h2>Products API</h2>
+      <h3>List Products</h3>
+      <ul>
+        <li>URL: <code>GET /api/products/</code></li>
+        <li>Public</li>
+        <li>Returns active products only</li>
+      </ul>
+      <p>Response example:</p>
+      <pre><code>[
+  {
+    "id": 1,
+    "category": {
+      "id": 10,
+      "name": "Electronics"
+    },
+    "title": "Smart Phone",
+    "description": "A nice smartphone.",
+    "price": "499.99",
+    "stock": 25,
+    "image": "https://.../products/phone.jpg",
+    "created_at": "2026-05-20T12:00:00Z"
+  }
+]
+</code></pre>
+
+      <h3>Create Product</h3>
+      <ul>
+        <li>URL: <code>POST /api/products/</code></li>
+        <li>Admin only</li>
+        <li>Requires authentication</li>
+      </ul>
+      <p>Payload:</p>
+      <pre><code>{
+  "category_id": 10,
+  "title": "Smart Phone",
+  "description": "A nice smartphone.",
+  "price": "499.99",
+  "stock": 25,
+  "image": "https://.../products/phone.jpg"
+}
+</code></pre>
+
+      <h3>Product Detail</h3>
+      <ul>
+        <li>URL: <code>GET /api/products/&lt;id&gt;/</code></li>
+        <li>Public</li>
+        <li>Returns a single product record</li>
+      </ul>
+
+      <h3>Update Product</h3>
+      <ul>
+        <li>URL: <code>PUT /api/products/&lt;id&gt;/</code></li>
+        <li>Admin only</li>
+        <li>Requires authentication</li>
+      </ul>
+      <p>Payload fields are the same as create. Partial updates may be supported via <code>PATCH</code> if the client uses it.</p>
+
+      <h3>Delete Product</h3>
+      <ul>
+        <li>URL: <code>DELETE /api/products/&lt;id&gt;/</code></li>
+        <li>Admin only</li>
+        <li>Requires authentication</li>
+      </ul>
+    </section>
+
+    <hr class="divider" />
+
+    <section>
+      <h2>Data Models</h2>
+      <h3>User</h3>
+      <p>Fields include:</p>
+      <ul>
+        <li><code>id</code> (UUID)</li>
+        <li><code>first_name</code></li>
+        <li><code>last_name</code></li>
+        <li><code>username</code></li>
+        <li><code>email</code></li>
+        <li><code>phone_number</code></li>
+        <li><code>role</code> (<code>customer</code>, <code>admin</code>, <code>VENDOR</code>)</li>
+        <li><code>is_active</code></li>
+        <li><code>is_verified</code></li>
+        <li><code>date_joined</code></li>
+        <li><code>last_login</code></li>
+      </ul>
+
+      <h3>ProfilePicture</h3>
+      <p>Fields:</p>
+      <ul>
+        <li><code>id</code> (UUID)</li>
+        <li><code>user</code> (one-to-one)</li>
+        <li><code>image</code></li>
+        <li><code>created_at</code></li>
+        <li><code>updated_at</code></li>
+      </ul>
+
+      <h3>Product</h3>
+      <p>Fields:</p>
+      <ul>
+        <li><code>id</code></li>
+        <li><code>category</code></li>
+        <li><code>title</code></li>
+        <li><code>description</code></li>
+        <li><code>price</code></li>
+        <li><code>stock</code></li>
+        <li><code>image</code></li>
+        <li><code>is_active</code></li>
+        <li><code>created_at</code></li>
+      </ul>
+
+      <h3>Category</h3>
+      <p>Fields:</p>
+      <ul>
+        <li><code>id</code></li>
+        <li><code>name</code></li>
+      </ul>
+    </section>
+
+    <hr class="divider" />
+
+    <section>
+      <h2>Setup & Environment</h2>
+      <h3>Required environment variables</h3>
+      <ul>
+        <li><code>SECRET_KEY</code></li>
+        <li><code>DEBUG</code></li>
+        <li><code>SMTP_SERVER</code></li>
+        <li><code>SMTP_PORT</code></li>
+        <li><code>MAIL_USERNAME</code></li>
+        <li><code>EMAIL_HOST_PASSWORD</code></li>
+        <li><code>FROM_EMAIL</code></li>
+        <li><code>CLOUD_NAME</code></li>
+        <li><code>API_KEY</code></li>
+        <li><code>API_SECRET</code></li>
+      </ul>
+      <h3>Local setup commands</h3>
+      <pre><code>python -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
+</code></pre>
+      <h3>Celery</h3>
+      <p>This project uses Celery with Redis:</p>
+      <ul>
+        <li><code>CELERY_BROKER_URL = redis://redis:6379/0</code></li>
+        <li><code>CELERY_RESULT_BACKEND = redis://redis:6379/0</code></li>
+      </ul>
+      <p>Start Celery worker separately if using async email tasks.</p>
+    </section>
+
+    <hr class="divider" />
+
+    <section>
+      <h2>Notes and behavior</h2>
+      <ul>
+        <li>OTPs are hashed and stored in the database.</li>
+        <li>OTP expiration is 10 minutes.</li>
+        <li>If login is attempted on an unverified account, a new OTP is sent.</li>
+        <li><code>profile-picture/</code> upload creates or updates the current user profile picture.</li>
+        <li>Product creation, update, and deletion are protected for admin users only.</li>
+      </ul>
+    </section>
+
+    <hr class="divider" />
+
+    <section>
+      <h2>Useful URLs</h2>
+      <ul>
+        <li>Admin panel: <code>/admin/</code></li>
+        <li>API root prefix: <code>/api/</code></li>
+        <li>Accounts: <code>/api/accounts/</code></li>
+        <li>Products: <code>/api/products/</code></li>
+      </ul>
+    </section>
+  </div>
+</body>
+</html>
