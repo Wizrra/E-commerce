@@ -21,7 +21,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-default-fallback-key')
 
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1', '*']  # Render will handle domain mapping
+# ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')  # Render will handle domain mapping
 
 # Add WhiteNoise right after SecurityMiddleware
 MIDDLEWARE = [
@@ -62,6 +62,8 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
     'localhost',
     'kubernetes.docker.internal',
+    'e-commerce-backend-unb8.onrender.com',
+    '.onrender.com',
 ]
 
 
