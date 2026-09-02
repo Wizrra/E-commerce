@@ -21,7 +21,7 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'your-default-fallback-key')
 
 DEBUG = os.environ.get('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = ['e-commerce-backend-unb8.onrender.com', 'localhost', '127.0.0.1']  # Render will handle domain mapping
+ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1', '*']  # Render will handle domain mapping
 
 # Add WhiteNoise right after SecurityMiddleware
 MIDDLEWARE = [
