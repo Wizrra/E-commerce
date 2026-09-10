@@ -200,27 +200,29 @@ REST_FRAMEWORK = {
 
 # CELERY_RESULT_BACKEND = "redis://redis:6379/0"
 
+import os
 import ssl
 
-# Read broker settings dynamically from environment variables
-CELERY_BROKER_URL = os.getenv('CELERY_BROKER_URL', 'redis://127.0.0.1:6379/0')
-CELERY_RESULT_BACKEND = os.getenv('CELERY_RESULT_BACKEND', 'redis://127.0.0.1:6379/0')
+# Read broker settings dynamically from Render environment variables
+raw_broker = os.getenv('CELERY_BROKER_URL')
+CELERY_BROKER_URL = raw_broker.strip('"\'') if raw_broker else 'redis://127.0.0.1:6379/0'
+
+raw_backend = os.getenv('CELERY_RESULT_BACKEND')
+CELERY_RESULT_BACKEND = raw_backend.strip('"\'') if raw_backend else 'redis://127.0.0.1:6379/0'
 
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 
-# FOR FREE RENDER DEPLOYMENT: Run tasks inline/synchronously inside Django
-CELERY_TASK_ALWAYS_EAGER = True
-CELERY_TASK_EAGER_PROPAGATES = True  # Ensures errors inside tasks throw standard Python exceptions
-
-# Upstash SSL configuration (required when using rediss://)
+# Enable SSL if using Upstash (rediss://)
 if CELERY_BROKER_URL.startswith('rediss://'):
-    CELERY_BROKER_USE_SSL = {
-        'ssl_cert_reqs': ssl.CERT_NONE
-    }
-    CELERY_REDIS_BACKEND_USE_SSL = {
-        'ssl_cert_reqs': ssl.CERT_NONE
-    }
+    CELERY_BROKER_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}
+    CELERY_REDIS_BACKEND_USE_SSL = {'ssl_cert_reqs': ssl.CERT_NONE}
+
+# Runs tasks synchronously in the main web service (100% Free on Render)
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
+
+
 
 CELERY_TIMEZONE = 'Africa/Lagos'
 CELERY_BROKER_TRANSPORT_OPTIONS = {
